@@ -1,0 +1,235 @@
+#!/usr/bin/ruby
+
+require "json"
+require "optparse"
+require 'digest'
+require 'pp'
+## Support Classes
+
+class RubyJSONPrimitive
+  attr_accessor :name, :attr_hash
+
+  def self.short_name
+    "Primitive"
+  end
+
+  def initialize(name, attr_hash)
+    @name = name
+    @attr_hash = attr_hash
+  end
+
+  def attr_hash
+    @attr_hash
+  end
+end
+
+RUBYSTRING = RubyJSONPrimitive.new("String","0123456789ABCDEF0123456789ABCDEF")
+RUBYINTEGER = RubyJSONPrimitive.new("Integer","0123456789ABCDEF0123456789ABCDE0")
+RUBYFLOAT = RubyJSONPrimitive.new("Float","0123456789ABCDEF0123456789ABCDE1")
+RUBYBOOLEAN = RubyJSONPrimitive.new("Boolean","0123456789ABCDEF0123456789ABCDE2")
+
+class RubyJSONEntity
+  attr_accessor :name, :attributes
+
+  def self.short_name
+    "Object"
+  end
+
+  def initialize(name)
+    @name = name
+    @attributes = {}
+  end
+
+  def attr_hash
+    md5 = Digest::MD5.new
+    @attributes.each do |k,v|
+      md5.update "#{k}:#{v.attr_hash}"
+    end
+    md5.hexdigest
+  end
+
+  def ==(other)
+    return false if other.class != self
+    attr_hash == other.attr_hash
+  end
+
+  def self.reset_parse
+    @@objs = {
+      RUBYSTRING.attr_hash => RUBYSTRING,
+      RUBYINTEGER.attr_hash => RUBYINTEGER,
+      RUBYFLOAT.attr_hash => RUBYFLOAT,
+      RUBYBOOLEAN.attr_hash => RUBYBOOLEAN,
+    }
+    @@unknowncount = 0
+  end
+
+  def self.parse_from(name, obj_hash)
+    ob = self.new(name)
+    obj_hash.each do |k,v|
+      if v.kind_of?(Array) 
+        att = RubyJSONArray.parse_from(k,v)
+      elsif v.kind_of?(String)
+        att = RUBYSTRING
+      elsif v.kind_of?(Integer)
+        att = RUBYINTEGER
+      elsif v.kind_of?(Float)
+        att = RUBYFLOAT
+      elsif !!v==v
+        att = RUBYBOOLEAN
+      elsif v.kind_of?(Hash)
+        att = self.parse_from(k,v)
+      end
+      ob.attributes[k] = att
+    end
+
+    x = ob.attr_hash
+    return @@objs[x] if @@objs.has_key?(x)
+    @@objs[x] = ob
+    ob
+  end
+
+  def self.entities
+    @@objs
+  end
+
+  def self.get_next_unknown
+    @@unknowncount += 1
+    "_unknown_#{@@unknowncount}"
+  end
+end
+
+class RubyJSONArray
+  attr_accessor :name, :ruby_types
+
+  def self.short_name
+    "Array"
+  end
+
+  def initialize(name)
+    @name = name
+    @ruby_types = {}
+  end
+
+  def self.parse_from(name, obj_array)
+    ob = self.new(name)
+    obj_array.each do |v|
+      if v.kind_of?(Array)
+        arr = RubyJSONArray.parse_from(RubyJSONEntity.get_next_unknown, v)
+        ob.ruby_types[arr.attr_hash] = arr
+      elsif v.kind_of?(String)
+        ob.ruby_types[RUBYSTRING.attr_hash] = RUBYSTRING
+      elsif v.kind_of?(Integer)
+        ob.ruby_types[RUBYINTEGER.attr_hash] = RUBYINTEGER
+      elsif v.kind_of?(Float)
+        ob.ruby_types[RUBYFLOAT.attr_hash] = RUBYFLOAT
+      elsif !!v==v
+        ob.ruby_types[RUBYBOOLEAN.attr_hash] = RUBYBOOLEAN
+      elsif v.kind_of?(Hash)
+        ent = RubyJSONEntity.parse_from(RubyJSONEntity.get_next_unknown,v)
+        ob.ruby_types[ent.attr_hash] = ent
+      end
+    end
+
+    x = ob.attr_hash
+    return RubyJSONEntity.entities[x] if RubyJSONEntity.entities.has_key?(x)
+    RubyJSONEntity.entities[x] = ob
+    ob
+  end
+
+  def attr_hash
+    md5 = Digest::MD5.new
+    @ruby_types.each do |k,typ|
+      md5.update typ.attr_hash
+    end
+    md5.hexdigest
+  end
+end
+
+class RubyJSONAttribute
+  attr_accessor :name, :ruby_type
+
+  def self.short_name
+    "Attribute"
+  end
+
+  def initialize(name, ruby_type)
+    @name = name
+    @ruby_type = type || "_unknown"
+  end
+
+  def attr_hash
+    Digest::MD5.hexdigest("#{@name}:#{@ruby_type}")
+  end 
+
+  def ==(other)
+    return false if other.class != self
+    attr_hash == other.attr_hash
+  end
+end
+
+## CODE
+
+VERSION = 1.0
+
+puts "json2ruby v#{VERSION}\n"
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] <file.json> [<file.json>....]"
+
+  opts.on("-o", "--outputdir OUTPUTDIR", "Output Directory") do |v|
+    options[:outputdir] = v
+  end
+
+  opts.on("-m", "--modulename", "Ruby Module Name") do |v|
+    options[:modulename] = v
+  end
+
+  opts.on("-v", "--verbose", "Verbose") do |v|
+    options[:verbose] = v
+  end
+end.parse!
+
+# Defaults
+options[:outputdir] ||= "./classes"
+
+# Ensure Output Directory
+options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
+puts "Output Directory: #{options[:outputdir]}" if options[:verbose]
+unless Dir.exists?(options[:outputdir])
+  puts "Creating Output Directory..." if options[:verbose]
+  Dir.mkdir(options[:outputdir])
+end
+
+# Reset the object cache
+RubyJSONEntity.reset_parse
+
+# Load and parse each JSON file
+puts "Parsing Files..." if options[:verbose]
+ARGV.each do |filename|
+  filename = File.expand_path(filename, File.dirname(__FILE__))
+  puts "Processing: #{filename}" if options[:verbose]
+
+  file = File.read(filename)
+  data_hash = JSON.parse(file)
+
+  rootclass = RubyJSONEntity.parse_from(File.basename(filename,'.*'), data_hash)
+
+end
+
+# Display Entities
+if options[:verbose]
+  puts "Entities:"
+  RubyJSONEntity.entities.each do |k,v|
+    unless v.is_a?(RubyJSONPrimitive)
+      puts "- #{v.name} (#{v.class.short_name} - #{k})"
+      if v.is_a?(RubyJSONEntity)
+        v.attributes.each { |ak,av| puts "  #{ak}: #{av.name}" }
+      elsif v.is_a?(RubyJSONArray)
+        puts "  Types: #{v.ruby_types.map { |h,v| v.name }.join(',')}"
+      end
+    end
+  end
+end
+
+puts "Done, Generated <x> files"
