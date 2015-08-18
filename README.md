@@ -4,7 +4,7 @@ A ruby rool for generating POROs from JSON data. It is intended to generate ruby
 
 The tool will 'fold down' objects with identical fields - i.e. if an object has exactly the same field names and types as another, it will assume they are the same type.
 
-'Root' entities are named after the files that they are parsed from. Entities with no obvious name (items in an array, for instance) are named `Unknown<x>` where <x> increments from 1. 
+'Root' entities are named after the files that they are parsed from. Entities with no obvious name (items in an array, for instance) are named `Unknown<x>` where `x` increments from 1. 
 
 ## Installation
 
