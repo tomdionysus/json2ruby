@@ -7,7 +7,7 @@ require 'pp'
 ## Support Classes
 
 class RubyJSONPrimitive
-  attr_accessor :name, :attr_hash
+  attr_accessor :name, :original_name, :attr_hash
 
   def self.short_name
     "Primitive"
@@ -21,6 +21,10 @@ class RubyJSONPrimitive
   def attr_hash
     @attr_hash
   end
+
+  def comment
+    @name
+  end
 end
 
 RUBYSTRING = RubyJSONPrimitive.new("String","0123456789ABCDEF0123456789ABCDEF")
@@ -29,7 +33,7 @@ RUBYFLOAT = RubyJSONPrimitive.new("Float","0123456789ABCDEF0123456789ABCDE1")
 RUBYBOOLEAN = RubyJSONPrimitive.new("Boolean","0123456789ABCDEF0123456789ABCDE2")
 
 class RubyJSONEntity
-  attr_accessor :name, :attributes
+  attr_accessor :name, :original_name, :attributes
 
   def self.short_name
     "Object"
@@ -66,6 +70,10 @@ class RubyJSONEntity
   def self.parse_from(name, obj_hash)
     ob = self.new(name)
     obj_hash.each do |k,v|
+
+      orig = k
+      k = k.gsub(/[^A-Za-z0-9_]/, "_")
+
       if v.kind_of?(Array) 
         att = RubyJSONArray.parse_from(k,v)
       elsif v.kind_of?(String)
@@ -79,6 +87,7 @@ class RubyJSONEntity
       elsif v.kind_of?(Hash)
         att = self.parse_from(k,v)
       end
+      att.original_name = orig if orig != k
       ob.attributes[k] = att
     end
 
@@ -94,12 +103,56 @@ class RubyJSONEntity
 
   def self.get_next_unknown
     @@unknowncount += 1
-    "_unknown_#{@@unknowncount}"
+    "Unknown#{@@unknowncount}"
+  end
+
+  def to_ruby(indent = 0, options = {})
+    x = ""
+    if options.has_key?(:require)
+      options[:require].each { |r| x += "require '#{r}'\r\n" }
+      x += "\r\n"
+    end
+    idt = (' '*indent)
+    x += "#{(' '*indent)}"
+    if options[:modules] 
+      x+="module"
+    else
+      x+="class"
+    end
+    x += " #{name}"
+    x += " < #{options[:superclass_name]}" if options.has_key?(:superclass_name)
+    x += "\r\n"
+    if options.has_key?(:extend)
+      options[:extend].each { |r| x += "#{(' '*(indent+2))}extend #{r}\r\n" }
+      x += "\r\n"
+    end
+    if options.has_key?(:include)
+      options[:include].each { |r| x += "#{(' '*(indent+2))}include #{r}\r\n" }
+      x += "\r\n"
+    end
+    x += attributes_to_ruby(indent+2, options)
+    x += "#{(' '*indent)}end\r\n"
+    x
+  end
+
+  def attributes_to_ruby(indent, options = {})
+    ident = (' '*indent)
+    x = ""
+    @attributes.each do |k,v|
+      x += "#{ident}#{options[:attributemethod]} :#{k} # #{v.comment}\r\n"
+    end
+    x
+  end
+
+  def comment
+    x = @name
+    x += " (#{@original_name})" unless @original_name.nil?
+    x
   end
 end
 
 class RubyJSONArray
-  attr_accessor :name, :ruby_types
+  attr_accessor :name, :original_name, :ruby_types
 
   def self.short_name
     "Array"
@@ -143,10 +196,16 @@ class RubyJSONArray
     end
     md5.hexdigest
   end
+
+  def comment
+    x = "#{@name}[]"
+    x += " (#{@original_name})" unless @original_name.nil?
+    x
+  end
 end
 
 class RubyJSONAttribute
-  attr_accessor :name, :ruby_type
+  attr_accessor :name, :original_name, :ruby_type
 
   def self.short_name
     "Attribute"
@@ -177,12 +236,40 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} [options] <file.json> [<file.json>....]"
 
-  opts.on("-o", "--outputdir OUTPUTDIR", "Output Directory") do |v|
+  opts.on("-o", "--outputdir OUTPUTDIR", "Output directory") do |v|
     options[:outputdir] = v
   end
 
-  opts.on("-m", "--modulename", "Ruby Module Name") do |v|
+  opts.on("-n", "--namespace MODULENAME", "Module namespace path") do |v|
     options[:modulename] = v
+  end
+
+  opts.on("-s", "--superclass SUPERCLASS", "Class ancestor") do |v|
+    options[:superclass_name] = v
+  end
+
+  opts.on("-r", "--require REQUIRE", "Require module in file") do |v|
+    options[:require] ||= []
+    options[:require] << v
+  end
+
+  opts.on("-i", "--include INCLUDE", "Include Class/Module in file") do |v|
+    options[:include] ||= []
+    options[:include] << v
+  end
+
+  opts.on("-e", "--extend INCLUDE", "Extend from Class/Module in file") do |v|
+    options[:extend] ||= []
+    options[:extend] << v
+  end
+
+  opts.on("-M", "--modules", "Create Modules, not classes") do |v|
+    options[:modules] = true
+    options.delete(:extend)
+  end
+
+  opts.on("-a", "--attributemethod METHODNAME", "Use method instead of attr_accessor") do |v|
+    options[:attributemethod] = v
   end
 
   opts.on("-v", "--verbose", "Verbose") do |v|
@@ -192,6 +279,9 @@ end.parse!
 
 # Defaults
 options[:outputdir] ||= "./classes"
+options[:modulename] ||= ""
+options[:attributemethod] ||= "attr_accessor"
+modulenames = options[:modulename].split("::")
 
 # Ensure Output Directory
 options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
@@ -214,22 +304,43 @@ ARGV.each do |filename|
   data_hash = JSON.parse(file)
 
   rootclass = RubyJSONEntity.parse_from(File.basename(filename,'.*'), data_hash)
-
 end
 
-# Display Entities
-if options[:verbose]
-  puts "Entities:"
-  RubyJSONEntity.entities.each do |k,v|
-    unless v.is_a?(RubyJSONPrimitive)
+# Write Entities
+opt = {}
+[:superclass_name,:include,:require,:extend, :modules, :attributemethod].each { |k| opt[k] = options[k] if options.has_key?(k) }
+
+files = 0
+RubyJSONEntity.entities.each do |k,v|
+  unless v.is_a?(RubyJSONPrimitive)
+    if options[:verbose]
       puts "- #{v.name} (#{v.class.short_name} - #{k})"
       if v.is_a?(RubyJSONEntity)
         v.attributes.each { |ak,av| puts "  #{ak}: #{av.name}" }
       elsif v.is_a?(RubyJSONArray)
-        puts "  Types: #{v.ruby_types.map { |h,v| v.name }.join(',')}"
+        puts "  (Types): #{v.ruby_types.map { |h,v| v.name }.join(',')}"
       end
     end
   end
+  if v.is_a?(RubyJSONEntity)
+    indent = 0
+    out = ""
+    modulenames.each do |v| 
+      out += (' '*indent)+"module #{v}\r\n"
+      indent += 2
+    end
+    out += v.to_ruby(indent,opt)
+    while indent>0
+      indent -= 2
+      out += (' '*indent)+"end\r\n"
+    end
+
+    File.write(options[:outputdir]+"/#{v.name}.rb", out) 
+    files += 1
+  end
 end
 
-puts "Done, Generated <x> files"
+# Write out entities
+
+
+puts "Done, Generated #{files} files"

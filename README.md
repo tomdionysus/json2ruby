@@ -16,11 +16,17 @@ git clone git@github.com:tomdionysus/json2ruby.git
 json2ruby.rb [options] <file.json> [<file.json>....]
 ```
 
-| Option Flags       | Default     | Description                               |
-|:-------------------|:------------|:------------------------------------------|
-| `-o, --outputdir`  | `./classes` | The output directory for Ruby class files |
-| `-m, --modulename` | <no module> | The Ruby module for classes.              |
-| `-v, --verbose`    | n/a         | Be verbose, List every operation/file     |
+| Option Flags            | Default         | Description                               |
+|:------------------------|:----------------|:------------------------------------------|
+| `-o, --outputdir`       | `./classes`     | The output directory for Ruby files       |
+| `-m, --modulename`      |                 | The Ruby module for files                 |
+| `-s, --superclass`      |                 | The superclass for classes                |
+| `-r, --require`         |                 | Add ruby `require` to files               |
+| `-i, --include`         |                 | Add ruby `include` to files               |
+| `-e, --extend`          |                 | Add ruby `extend` to files                |
+| `-M, --modules`         |                 | Generate Ruby modules, not classes        |
+| `-a, --attributemethod` | `attr_accessor` | Use a custom attribute definition method  |
+| `-v, --verbose`         | n/a             | Be verbose, List every operation/file     |
 
 ## Notes
 
