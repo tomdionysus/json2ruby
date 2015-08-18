@@ -230,6 +230,7 @@ VERSION = 1.0
 
 puts "json2ruby v#{VERSION}\n"
 
+# Do the cmdline options
 options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} [options] <file.json> [<file.json>....]"
@@ -311,7 +312,10 @@ end
 
 # Write Entities
 opt = {}
-[:superclass_name, :include, :require, :extend, :modules, :attributemethod, :collectionmethod].each { |k| opt[k] = options[k] if options.has_key?(k) }
+[ 
+  :superclass_name, :include, :require, :extend, :modules, :attributemethod, 
+  :collectionmethod
+].each { |k| opt[k] = options[k] if options.has_key?(k) }
 
 files = 0
 RubyJSONEntity.entities.each do |k,v|
@@ -343,7 +347,5 @@ RubyJSONEntity.entities.each do |k,v|
   end
 end
 
-# Write out entities
-
-
+# Done
 puts "Done, Generated #{files} files"
