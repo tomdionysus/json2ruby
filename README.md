@@ -1,8 +1,10 @@
 # json2ruby
 
-A ruby rool for generating POROs from JSON data. It is intended to generate ruby model classes from existing JSON data, e.g. responses from an API.
+A ruby rool for generating POROs from JSON data. It is intended to generate ruby model classes/modules from existing JSON data, e.g. responses from an API.
 
-The tool will 'fold down' objects with identical fields - i.e. if an object has exactly the same fields as another, we assume they are identical and therefore the same type.
+The tool will 'fold down' objects with identical fields - i.e. if an object has exactly the same fields as another, we assume they are the same type.
+
+'Root' entities are named after the files that they are parsed from. Entities with no obvious name (items in an array, for instance) are named `Unknown<x>` where <x> increments from 1. 
 
 ## Installation
 
@@ -16,17 +18,32 @@ git clone git@github.com:tomdionysus/json2ruby.git
 json2ruby.rb [options] <file.json> [<file.json>....]
 ```
 
-| Option Flags            | Default         | Description                               |
-|:------------------------|:----------------|:------------------------------------------|
-| `-o, --outputdir`       | `./classes`     | The output directory for Ruby files       |
-| `-m, --modulename`      |                 | The Ruby module for files                 |
-| `-s, --superclass`      |                 | The superclass for classes                |
-| `-r, --require`         |                 | Add ruby `require` to files               |
-| `-i, --include`         |                 | Add ruby `include` to files               |
-| `-e, --extend`          |                 | Add ruby `extend` to files                |
-| `-M, --modules`         |                 | Generate Ruby modules, not classes        |
-| `-a, --attributemethod` | `attr_accessor` | Use a custom attribute definition method  |
-| `-v, --verbose`         | n/a             | Be verbose, List every operation/file     |
+| Option Flags             | Default          | Description                                |
+|:-------------------------|:----------------|:--------------------------------------------|
+| `-o, --outputdir`        | `./classes`      | The output directory for Ruby files        |
+| `-m, --modulename`       |                  | The Ruby module for files                  |
+| `-s, --superclass`       |                  | The superclass for classes                 |
+| `-r, --require`          |                  | Add ruby `require` to files                |
+| `-i, --include`          |                  | Add ruby `include` to files                |
+| `-e, --extend`           |                  | Add ruby `extend` to files                 |
+| `-M, --modules`          |                  | Generate Ruby modules, not classes         |
+| `-a, --attributemethod`  | `attr_accessor`  | Use a custom attribute definition method   |
+| `-c, --collectionmethod` | `attr_accessor`  | Use a custom collection definition method  |
+| `-v, --verbose`          | n/a              | Be verbose, List every operation/file      |
+
+## Example
+
+Generate a simple set of POROs from an API response JSON file, be verbose:
+
+```bash
+./json2ruby.rb -v data.json
+```
+
+Generate a (very) basic set of [apotonick/representable](https://github.com/apotonick/representable) compatible representer modules:
+
+```bash
+./json2ruby.rb -r representable/json-i Representable::JSON -M -a property -c collection data.json 
+```
 
 ## Notes
 
