@@ -113,13 +113,7 @@ class RubyJSONEntity
       x += "\r\n"
     end
     idt = (' '*indent)
-    x += "#{(' '*indent)}"
-    if options[:modules] 
-      x+="module"
-    else
-      x+="class"
-    end
-    x += " #{name}"
+    x += "#{(' '*indent)}#{options[:modules] ? "module" : "class"} #{name}"
     x += " < #{options[:superclass_name]}" if options.has_key?(:superclass_name)
     x += "\r\n"
     if options.has_key?(:extend)
@@ -139,7 +133,11 @@ class RubyJSONEntity
     ident = (' '*indent)
     x = ""
     @attributes.each do |k,v|
-      x += "#{ident}#{options[:attributemethod]} :#{k} # #{v.comment}\r\n"
+      if (v.is_a?(RubyJSONArray))
+        x += "#{ident}#{options[:collectionmethod]} :#{k} # #{v.comment}\r\n"
+      else
+        x += "#{ident}#{options[:attributemethod]} :#{k} # #{v.comment}\r\n"
+      end
     end
     x
   end
@@ -268,8 +266,12 @@ OptionParser.new do |opts|
     options.delete(:extend)
   end
 
-  opts.on("-a", "--attributemethod METHODNAME", "Use method instead of attr_accessor") do |v|
+  opts.on("-a", "--attributemethod METHODNAME", "Use attribute method instead of attr_accessor") do |v|
     options[:attributemethod] = v
+  end
+
+  opts.on("-c", "--collectionmethod METHODNAME", "Use collection method instead of attr_accessor") do |v|
+    options[:collectionmethod] = v
   end
 
   opts.on("-v", "--verbose", "Verbose") do |v|
@@ -281,6 +283,7 @@ end.parse!
 options[:outputdir] ||= "./classes"
 options[:modulename] ||= ""
 options[:attributemethod] ||= "attr_accessor"
+options[:collectionmethod] ||= "attr_accessor"
 modulenames = options[:modulename].split("::")
 
 # Ensure Output Directory
@@ -308,7 +311,7 @@ end
 
 # Write Entities
 opt = {}
-[:superclass_name,:include,:require,:extend, :modules, :attributemethod].each { |k| opt[k] = options[k] if options.has_key?(k) }
+[:superclass_name, :include, :require, :extend, :modules, :attributemethod, :collectionmethod].each { |k| opt[k] = options[k] if options.has_key?(k) }
 
 files = 0
 RubyJSONEntity.entities.each do |k,v|
