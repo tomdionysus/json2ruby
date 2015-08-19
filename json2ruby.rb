@@ -31,6 +31,7 @@ RUBYSTRING = RubyJSONPrimitive.new("String","0123456789ABCDEF0123456789ABCDEF")
 RUBYINTEGER = RubyJSONPrimitive.new("Integer","0123456789ABCDEF0123456789ABCDE0")
 RUBYFLOAT = RubyJSONPrimitive.new("Float","0123456789ABCDEF0123456789ABCDE1")
 RUBYBOOLEAN = RubyJSONPrimitive.new("Boolean","0123456789ABCDEF0123456789ABCDE2")
+RUBYNUMERIC = RubyJSONPrimitive.new("Numeric","0123456789ABCDEF0123456789ABCDE2")
 
 class RubyJSONEntity
   attr_accessor :name, :original_name, :attributes
@@ -63,11 +64,12 @@ class RubyJSONEntity
       RUBYINTEGER.attr_hash => RUBYINTEGER,
       RUBYFLOAT.attr_hash => RUBYFLOAT,
       RUBYBOOLEAN.attr_hash => RUBYBOOLEAN,
+      RUBYNUMERIC.attr_hash => RUBYNUMERIC,
     }
     @@unknowncount = 0
   end
 
-  def self.parse_from(name, obj_hash)
+  def self.parse_from(name, obj_hash, options)
     ob = self.new(name)
     obj_hash.each do |k,v|
 
@@ -75,17 +77,19 @@ class RubyJSONEntity
       k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
       if v.kind_of?(Array) 
-        att = RubyJSONArray.parse_from(k,v)
-      elsif v.kind_of?(String)
+        att = RubyJSONArray.parse_from(k, v, options)
+      elsif v.kind_of?(String) 
         att = RUBYSTRING
-      elsif v.kind_of?(Integer)
+      elsif v.kind_of?(Integer) && !options[:forcenumeric]
         att = RUBYINTEGER
-      elsif v.kind_of?(Float)
+      elsif v.kind_of?(Float) && !options[:forcenumeric]
         att = RUBYFLOAT
+      elsif (v.kind_of?(Integer) || v.kind_of?(Float)) && options[:forcenumeric]
+        att = RUBYNUMERIC
       elsif !!v==v
         att = RUBYBOOLEAN
       elsif v.kind_of?(Hash)
-        att = self.parse_from(k,v)
+        att = self.parse_from(k, v, options)
       end
       att.original_name = orig if orig != k
       ob.attributes[k] = att
@@ -134,10 +138,14 @@ class RubyJSONEntity
     x = ""
     @attributes.each do |k,v|
       if (v.is_a?(RubyJSONArray))
-        x += "#{ident}#{options[:collectionmethod]} :#{k} # #{v.comment}\r\n"
+        x += "#{ident}#{options[:collectionmethod]} :#{k}"
       else
-        x += "#{ident}#{options[:attributemethod]} :#{k} # #{v.comment}\r\n"
+        x += "#{ident}#{options[:attributemethod]} :#{k}"
       end
+      if options[:includetypes]
+        x += ", '#{options[:namespace]+"::"+v.name}'" unless v.is_a?(RubyJSONPrimitive)
+      end
+      x += " # #{v.comment}\r\n"
     end
     x
   end
@@ -161,22 +169,24 @@ class RubyJSONArray
     @ruby_types = {}
   end
 
-  def self.parse_from(name, obj_array)
+  def self.parse_from(name, obj_array, options)
     ob = self.new(name)
     obj_array.each do |v|
       if v.kind_of?(Array)
-        arr = RubyJSONArray.parse_from(RubyJSONEntity.get_next_unknown, v)
+        arr = RubyJSONArray.parse_from(RubyJSONEntity.get_next_unknown, v, options)
         ob.ruby_types[arr.attr_hash] = arr
-      elsif v.kind_of?(String)
+      elsif v.kind_of?(String) 
         ob.ruby_types[RUBYSTRING.attr_hash] = RUBYSTRING
-      elsif v.kind_of?(Integer)
+      elsif v.kind_of?(Integer) && !options[:forcenumeric]
         ob.ruby_types[RUBYINTEGER.attr_hash] = RUBYINTEGER
-      elsif v.kind_of?(Float)
+      elsif v.kind_of?(Float) && !options[:forcenumeric]
         ob.ruby_types[RUBYFLOAT.attr_hash] = RUBYFLOAT
+      elsif (v.kind_of?(Float) || v.kind_of?(Integer)) && options[:forcenumeric]
+        ob.ruby_types[RUBYNUMERIC.attr_hash] = RUBYNUMERIC
       elsif !!v==v
         ob.ruby_types[RUBYBOOLEAN.attr_hash] = RUBYBOOLEAN
       elsif v.kind_of?(Hash)
-        ent = RubyJSONEntity.parse_from(RubyJSONEntity.get_next_unknown,v)
+        ent = RubyJSONEntity.parse_from(RubyJSONEntity.get_next_unknown, v, options)
         ob.ruby_types[ent.attr_hash] = ent
       end
     end
@@ -240,7 +250,7 @@ OptionParser.new do |opts|
   end
 
   opts.on("-n", "--namespace MODULENAME", "Module namespace path") do |v|
-    options[:modulename] = v
+    options[:namespace] = v
   end
 
   opts.on("-s", "--superclass SUPERCLASS", "Class ancestor") do |v|
@@ -275,6 +285,22 @@ OptionParser.new do |opts|
     options[:collectionmethod] = v
   end
 
+  opts.on("-t", "--types", "Include type in attribute definition call") do |v|
+    options[:includetypes] = true
+  end
+
+  opts.on("-b", "--baseless", "Don't generate classes/modules for the root JSON in each file") do |v|
+    options[:baseless] = true
+  end
+
+  opts.on("-f", "--forceoverwrite", "Overwrite Existing files") do |v|
+    options[:forceoverwrite] = v
+  end
+
+  opts.on("-N", "--forcenumeric", "Use Numeric instead of Integer/Float") do |v|
+    options[:forcenumeric] = v
+  end
+
   opts.on("-v", "--verbose", "Verbose") do |v|
     options[:verbose] = v
   end
@@ -282,10 +308,14 @@ end.parse!
 
 # Defaults
 options[:outputdir] ||= "./classes"
-options[:modulename] ||= ""
+options[:namespace] ||= ""
 options[:attributemethod] ||= "attr_accessor"
 options[:collectionmethod] ||= "attr_accessor"
-modulenames = options[:modulename].split("::")
+options[:includetypes] ||= false
+options[:baseless] ||= false
+options[:forceoverwrite] ||= false
+options[:verbose] ||= false
+modulenames = options[:namespace].split("::")
 
 # Ensure Output Directory
 options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
@@ -300,6 +330,9 @@ RubyJSONEntity.reset_parse
 
 # Load and parse each JSON file
 puts "Parsing Files..." if options[:verbose]
+
+rootclasses = []
+
 ARGV.each do |filename|
   filename = File.expand_path(filename, File.dirname(__FILE__))
   puts "Processing: #{filename}" if options[:verbose]
@@ -307,18 +340,15 @@ ARGV.each do |filename|
   file = File.read(filename)
   data_hash = JSON.parse(file)
 
-  rootclass = RubyJSONEntity.parse_from(File.basename(filename,'.*'), data_hash)
+  rootclasses << RubyJSONEntity.parse_from(File.basename(filename,'.*'), data_hash, options)
 end
 
 # Write Entities
-opt = {}
-[ 
-  :superclass_name, :include, :require, :extend, :modules, :attributemethod, 
-  :collectionmethod
-].each { |k| opt[k] = options[k] if options.has_key?(k) }
 
 files = 0
 RubyJSONEntity.entities.each do |k,v|
+  next if options[:baseless] and rootclasses.include?(v)
+
   unless v.is_a?(RubyJSONPrimitive)
     if options[:verbose]
       puts "- #{v.name} (#{v.class.short_name} - #{k})"
@@ -336,14 +366,19 @@ RubyJSONEntity.entities.each do |k,v|
       out += (' '*indent)+"module #{v}\r\n"
       indent += 2
     end
-    out += v.to_ruby(indent,opt)
+    out += v.to_ruby(indent,options)
     while indent>0
       indent -= 2
       out += (' '*indent)+"end\r\n"
     end
 
-    File.write(options[:outputdir]+"/#{v.name}.rb", out) 
-    files += 1
+    filename = options[:outputdir]+"/#{v.name}.rb"
+    if File.exists?(filename) && !options[:forceoverwrite]
+      $stdout.puts "File #{filename} exists. Use -f to overwrite."
+    else
+      File.write(filename, out) 
+      files += 1
+    end
   end
 end
 

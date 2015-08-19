@@ -18,18 +18,22 @@ git clone git@github.com:tomdionysus/json2ruby.git
 json2ruby.rb [options] <file.json> [<file.json>....]
 ```
 
-| Option Flags             | Default          | Description                                |
-|:-------------------------|:----------------|:--------------------------------------------|
-| `-o, --outputdir`        | `./classes`      | The output directory for Ruby files        |
-| `-m, --modulename`       |                  | The Ruby module for files                  |
-| `-s, --superclass`       |                  | The superclass for classes                 |
-| `-r, --require`          |                  | Add ruby `require` to files                |
-| `-i, --include`          |                  | Add ruby `include` to files                |
-| `-e, --extend`           |                  | Add ruby `extend` to files                 |
-| `-M, --modules`          |                  | Generate Ruby modules, not classes         |
-| `-a, --attributemethod`  | `attr_accessor`  | Use a custom attribute definition method   |
-| `-c, --collectionmethod` | `attr_accessor`  | Use a custom collection definition method  |
-| `-v, --verbose`          | n/a              | Be verbose, List every operation/file      |
+| Option Flags             | Default          | Description                                     |
+|:-------------------------|:-----------------|:-------------------------------------------------|
+| `-o, --outputdir`        | `./classes`      | The output directory for Ruby files             |
+| `-m, --modulename`       |                  | The Ruby module for files                       |
+| `-s, --superclass`       |                  | The superclass for classes                      |
+| `-r, --require`          |                  | Add ruby `require` to files                     |
+| `-i, --include`          |                  | Add ruby `include` to files                     |
+| `-e, --extend`           |                  | Add ruby `extend` to files                      |
+| `-M, --modules`          |                  | Generate Ruby modules, not classes              |
+| `-a, --attributemethod`  | `attr_accessor`  | Use a custom attribute definition method        |
+| `-c, --collectionmethod` | `attr_accessor`  | Use a custom collection definition method       |
+| `-t, --types`            |                  | Include type name in attribute definition call  |
+| `-b, --baseless`         |                  | Don't generate for the root object in each file |
+| `-f, --forceoverwrite`   |                  | Overwrite Existing files                        |
+| `-N, --forcenumeric`     |                  | Use Numeric instead of Integer/Float            |
+| `-v, --verbose`          |                  | Be verbose, List every operation/file           |
 
 ## Example
 
@@ -60,6 +64,8 @@ module FirstModule
   end
 end
 ```
+
+The option `-N, --forcenumeric` can be useful to fold down identical types where an attribute which is a float happens to have an integer value, to avoid generating two identical types.
 
 ## Contributing
 
