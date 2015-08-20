@@ -21,6 +21,48 @@ describe JSON2Ruby::Entity do
     end
   end
 
+  describe '#self.parse_from' do
+    it 'should parse' do
+      obj = {
+        "one" => "1",
+        "two" => 2,
+        "three" => 3.14,
+        "four" => true,
+        "five" => {
+          "5.1"=>5.1
+        },
+        "six" => [ 1,2,3 ]
+      }
+
+      ent = JSON2Ruby::Entity.parse_from("Test",obj)
+
+      expect(ent).to be_a(JSON2Ruby::Entity)
+      expect(ent.name).to eq("Test")
+      expect(ent.attributes.length).to eq(6)
+      expect(ent.attr_hash).to eq("e17024aea3f6f3623dda7170697a72dd")
+    end
+
+    it 'should use numeric instead of int/float when told to' do
+      obj = {
+        "one" => "1",
+        "two" => 2,
+        "three" => 3.14,
+        "four" => true,
+        "five" => {
+          "5.1"=>5.1
+        },
+        "six" => [ 1,2,3 ]
+      }
+
+      ent = JSON2Ruby::Entity.parse_from("Test",obj, {:forcenumeric=>true})
+
+      expect(ent).to be_a(JSON2Ruby::Entity)
+      expect(ent.name).to eq("Test")
+      expect(ent.attributes.length).to eq(6)
+      expect(ent.attr_hash).to eq("592884f7d98c4a31b7d641b10636d546")
+    end
+  end
+
   describe '#attr_hash' do
     it 'should return correct hash' do
       attrs = {

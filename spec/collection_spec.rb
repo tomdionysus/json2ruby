@@ -21,6 +21,52 @@ describe JSON2Ruby::Collection do
     end
   end
 
+  describe '#self.parse_from' do
+    it 'should parse' do
+      obj = [
+        "one",
+        2,
+        3.14,
+        true,
+        {
+          "five" => 5
+        },
+        [
+          "six"
+        ]
+      ]
+
+      col = JSON2Ruby::Collection.parse_from("Test",obj)
+
+      expect(col).to be_a(JSON2Ruby::Collection)
+      expect(col.name).to eq("Test")
+      expect(col.ruby_types.length).to eq(6)
+      expect(col.attr_hash).to eq("6c7447d1288a16012372de22075fdc19")
+    end
+
+    it 'should use numeric instead of int/float when told to' do
+      obj = [
+        "one",
+        2,
+        3.14,
+        true,
+        {
+          "five" => 5
+        },
+        [
+          "six"
+        ]
+      ]
+
+      col = JSON2Ruby::Collection.parse_from("Test",obj, {:forcenumeric=>true})
+
+      expect(col).to be_a(JSON2Ruby::Collection)
+      expect(col.name).to eq("Test")
+      expect(col.ruby_types.length).to eq(4)
+      expect(col.attr_hash).to eq("e38d96234bfbf21545ed4ab2128b9ab4")
+    end
+  end
+
   describe '#attr_hash' do
     it 'should return correct hash' do
       types = {

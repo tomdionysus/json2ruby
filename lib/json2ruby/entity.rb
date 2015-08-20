@@ -38,7 +38,7 @@ module JSON2Ruby
       @@unknowncount = 0
     end
 
-    def self.parse_from(name, obj_hash, options)
+    def self.parse_from(name, obj_hash, options = {})
       ob = self.new(name)
       obj_hash.each do |k,v|
 
@@ -125,5 +125,7 @@ module JSON2Ruby
       x += " (#{@original_name})" unless @original_name.nil?
       x
     end
+
+    reset_parse
   end
 end

@@ -13,7 +13,7 @@ module JSON2Ruby
       @ruby_types = ruby_types
     end
 
-    def self.parse_from(name, obj_array, options)
+    def self.parse_from(name, obj_array, options = {})
       ob = self.new(name)
       obj_array.each do |v|
         if v.kind_of?(Array)
