@@ -1,3 +1,5 @@
+require 'digest/md5'
+
 module JSON2Ruby
   class Attribute
     attr_accessor :name, :original_name, :ruby_type
@@ -6,9 +8,9 @@ module JSON2Ruby
       "Attribute"
     end
 
-    def initialize(name, ruby_type)
+    def initialize(name, ruby_type = nil)
       @name = name
-      @ruby_type = type || "_unknown"
+      @ruby_type = ruby_type || "_unknown"
     end
 
     def attr_hash
@@ -16,7 +18,7 @@ module JSON2Ruby
     end
 
     def ==(other)
-      return false if other.class != self
+      return false if other.class != self.class
       attr_hash == other.attr_hash
     end
   end

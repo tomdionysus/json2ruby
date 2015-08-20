@@ -15,11 +15,6 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.version       = JSON2Ruby::VERSION
 
-  s.required_ruby_version = '>= 2.1.5'
-
-  s.add_runtime_dependency     'curb'
-  s.add_runtime_dependency     'oj'
-
   s.add_development_dependency 'rake',             '~> 10.4'
   s.add_development_dependency 'simplecov',        '~> 0.10.0'
   s.add_development_dependency 'simplecov-rcov',   '~> 0.2'

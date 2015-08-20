@@ -1,15 +1,17 @@
+require 'digest/md5'
+
 module JSON2Ruby
 
   class Entity
     attr_accessor :name, :original_name, :attributes
 
     def self.short_name
-      "Object"
+      "Entity"
     end
 
-    def initialize(name)
+    def initialize(name, attributes = {})
       @name = name
-      @attributes = {}
+      @attributes = attributes
     end
 
     def attr_hash
@@ -21,7 +23,7 @@ module JSON2Ruby
     end
 
     def ==(other)
-      return false if other.class != self
+      return false if other.class != self.class
       attr_hash == other.attr_hash
     end
 
@@ -73,6 +75,7 @@ module JSON2Ruby
     end
 
     def self.get_next_unknown
+      @@unknowncount ||= 0
       @@unknowncount += 1
       "Unknown#{@@unknowncount}"
     end

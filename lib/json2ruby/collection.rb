@@ -1,14 +1,16 @@
+require 'digest/md5'
+
 module JSON2Ruby
   class Collection
     attr_accessor :name, :original_name, :ruby_types
 
     def self.short_name
-      "Array"
+      "Collection"
     end
 
-    def initialize(name)
+    def initialize(name, ruby_types = {})
       @name = name
-      @ruby_types = {}
+      @ruby_types = ruby_types
     end
 
     def self.parse_from(name, obj_array, options)
@@ -45,6 +47,11 @@ module JSON2Ruby
         md5.update typ.attr_hash
       end
       md5.hexdigest
+    end
+
+    def ==(other)
+      return false if other.class != self.class
+      attr_hash == other.attr_hash
     end
 
     def comment
