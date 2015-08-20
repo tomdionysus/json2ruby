@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.version       = JSON2Ruby::VERSION
 
+  s.add_development_dependency "coveralls"
   s.add_development_dependency "bundler", "~> 1.10"
   s.add_development_dependency "rake", "~> 10.0"
   s.add_development_dependency 'simplecov',        '~> 0.10.0'
