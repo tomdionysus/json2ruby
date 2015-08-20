@@ -1,5 +1,7 @@
 # json2ruby
 
+[![Build Status](https://travis-ci.org/tomdionysus/json2ruby.svg?branch=master)](https://travis-ci.org/tomdionysus/json2ruby)
+
 A ruby rool for generating POROs from JSON data. It is intended to generate ruby model classes/modules from existing JSON data, e.g. responses from an API.
 
 The tool will 'fold down' objects with identical fields - i.e. if an object has exactly the same field names and types as another, it will assume they are the same type.
