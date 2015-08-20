@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'json2ruby'
+
+JSON2Ruby::CLI.run(ARGV)
