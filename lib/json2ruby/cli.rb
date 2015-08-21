@@ -5,7 +5,7 @@ require 'optparse'
 module JSON2Ruby
 
   class CLI
-    def self.run(args)
+    def self.run
 
       puts "json2ruby v#{VERSION}\n"
 
@@ -13,18 +13,25 @@ module JSON2Ruby
       options = get_cli_options
 
       # Ensure Output Directory
-      options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
+      options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))      
+      ensure_output_dir(options)
+
+      # Parse Files
+      rootclasses = parse_files(options)
+
+      # Write out Ruby (see what I'm doing here?)
+      writer = JSON2Ruby::RubyWriter
+
+      # Write Output
+      write_files(rootclasses, writer, options)
+    end
+
+    def self.ensure_output_dir(options)
       puts "Output Directory: #{options[:outputdir]}" if options[:verbose]
       unless Dir.exists?(options[:outputdir])
         puts "Creating Output Directory..." if options[:verbose]
         Dir.mkdir(options[:outputdir])
       end
-
-      rootclasses = parse_files(options)
-
-      # Write Entities
-
-      write_files(rootclasses, options)
     end
 
     def self.get_cli_options
@@ -130,7 +137,7 @@ module JSON2Ruby
       rootclasses
     end
 
-    def self.write_files(rootclasses, options)
+    def self.write_files(rootclasses, writer, options)
       files = 0
       Entity.entities.each do |k,v|
         next if options[:baseless] and rootclasses.include?(v)
@@ -152,7 +159,7 @@ module JSON2Ruby
             out += (' '*indent)+"module #{v}\r\n"
             indent += 2
           end
-          out += v.to_ruby(indent,options)
+          out += writer.to_code(v, indent,options)
           while indent>0
             indent -= 2
             out += (' '*indent)+"end\r\n"

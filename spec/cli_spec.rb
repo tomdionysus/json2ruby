@@ -2,6 +2,57 @@ require 'spec_helper'
 
 describe JSON2Ruby::CLI do
 
+  describe '#run' do
+    it 'should call in correct order' do
+      options = { :one => 1, :outputdir => File.dirname(__FILE__) }
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("json2ruby v#{JSON2Ruby::VERSION}\n")
+      expect(JSON2Ruby::CLI).to receive(:get_cli_options).and_return(options)
+      expect(JSON2Ruby::CLI).to receive(:ensure_output_dir).with(options)
+      expect(JSON2Ruby::CLI).to receive(:parse_files).with(options).and_return("rootclasses")
+      expect(JSON2Ruby::CLI).to receive(:write_files).with("rootclasses",JSON2Ruby::RubyWriter,options)
+
+      JSON2Ruby::CLI.run
+    end
+  end
+
+  describe '#ensure_output_dir' do
+    it 'should check dir and create if necessary' do
+      dir =  File.dirname(__FILE__)
+      options = { :one => 1, :outputdir => dir }
+
+      expect(Dir).to receive(:exists?).with(dir).and_return(false)
+      expect(Dir).to receive(:mkdir).with(dir)
+
+      expect(JSON2Ruby::CLI).not_to receive(:puts)
+
+      JSON2Ruby::CLI.ensure_output_dir(options)
+    end
+
+    it 'should not create dir if exists' do
+      dir =  File.dirname(__FILE__)
+      options = { :one => 1, :outputdir => dir }
+
+      expect(Dir).to receive(:exists?).with(dir).and_return(true)
+      expect(Dir).not_to receive(:mkdir)
+
+      JSON2Ruby::CLI.ensure_output_dir(options)
+    end
+
+    it 'should be verbose if option set' do
+      dir =  File.dirname(__FILE__)
+      options = { :one => 1, :outputdir => dir, :verbose =>true }
+
+      expect(Dir).to receive(:exists?).with(dir).and_return(false)
+      expect(Dir).to receive(:mkdir).with(dir)
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Output Directory: #{dir}")
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Creating Output Directory...")
+
+      JSON2Ruby::CLI.ensure_output_dir(options)
+    end
+  end
+
   describe '#get_cli_options' do
   
     it 'should have correct defaults' do
@@ -95,6 +146,12 @@ describe JSON2Ruby::CLI do
       ARGV=["-t"]
       options = JSON2Ruby::CLI.get_cli_options
       expect(options[:includetypes]).to eq(true)
+    end
+
+    it 'should parse -b' do
+      ARGV=["-b"]
+      options = JSON2Ruby::CLI.get_cli_options
+      expect(options[:baseless]).to eq(true)
     end
 
     it 'should parse -f' do

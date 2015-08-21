@@ -2,4 +2,4 @@
 
 require 'json2ruby'
 
-JSON2Ruby::CLI.run(ARGV)
+JSON2Ruby::CLI.run

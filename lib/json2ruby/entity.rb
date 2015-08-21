@@ -80,46 +80,6 @@ module JSON2Ruby
       "Unknown#{@@unknowncount}"
     end
 
-    def to_ruby(indent = 0, options = {})
-      x = ""
-      if options.has_key?(:require)
-        options[:require].each { |r| x += "require '#{r}'\r\n" }
-        x += "\r\n"
-      end
-      idt = (' '*indent)
-      x += "#{(' '*indent)}#{options[:modules] ? "module" : "class"} #{name}"
-      x += " < #{options[:superclass_name]}" if options.has_key?(:superclass_name)
-      x += "\r\n"
-      if options.has_key?(:extend)
-        options[:extend].each { |r| x += "#{(' '*(indent+2))}extend #{r}\r\n" }
-        x += "\r\n"
-      end
-      if options.has_key?(:include)
-        options[:include].each { |r| x += "#{(' '*(indent+2))}include #{r}\r\n" }
-        x += "\r\n"
-      end
-      x += attributes_to_ruby(indent+2, options)
-      x += "#{(' '*indent)}end\r\n"
-      x
-    end
-
-    def attributes_to_ruby(indent, options = {})
-      ident = (' '*indent)
-      x = ""
-      @attributes.each do |k,v|
-        if (v.is_a?(Collection))
-          x += "#{ident}#{options[:collectionmethod]} :#{k}"
-        else
-          x += "#{ident}#{options[:attributemethod]} :#{k}"
-        end
-        if options[:includetypes]
-          x += ", '#{options[:namespace]+"::"+v.name}'" unless v.is_a?(Primitive)
-        end
-        x += " # #{v.comment}\r\n"
-      end
-      x
-    end
-
     def comment
       x = @name
       x += " (#{@original_name})" unless @original_name.nil?
