@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'json2ruby'
+require "#{File.expand_path("../lib/json2ruby",File.dirname(__FILE__))}"
 
 JSON2Ruby::CLI.run
