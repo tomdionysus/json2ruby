@@ -142,16 +142,8 @@ module JSON2Ruby
       Entity.entities.each do |k,v|
         next if options[:baseless] and rootclasses.include?(v)
 
-        unless v.is_a?(Primitive)
-          if options[:verbose]
-            puts "- #{v.name} (#{v.class.short_name} - #{k})"
-            if v.is_a?(Entity)
-              v.attributes.each { |ak,av| puts "  #{ak}: #{av.name}" }
-            elsif v.is_a?(Collection)
-              puts "  (Types): #{v.ruby_types.map { |h,v| v.name }.join(',')}"
-            end
-          end
-        end
+        display_entity(k,v) if options[:verbose] && !v.is_a?(Primitive)
+
         if v.is_a?(Entity)
           indent = 0
           out = ""
@@ -167,7 +159,7 @@ module JSON2Ruby
 
           filename = options[:outputdir]+"/#{v.name}.rb"
           if File.exists?(filename) && !options[:forceoverwrite]
-            $stdout.puts "File #{filename} exists. Use -f to overwrite."
+            $stderr.puts "File #{filename} exists. Use -f to overwrite."
           else
             File.write(filename, out)
             files += 1
@@ -176,7 +168,16 @@ module JSON2Ruby
       end
 
       # Done
-      puts "Done, Generated #{files} files"
+      puts "Done, Generated #{files} file#{files==1 ? '' : 's'}"
+    end
+
+    def self.display_entity(hsh, ent)
+      puts "- #{ent.name} (#{ent.class.short_name} - #{hsh})"
+      if ent.is_a?(Entity)
+        ent.attributes.each { |ak,av| puts "  #{ak}: #{av.name}" }
+      elsif ent.is_a?(Collection)
+        puts "  (Types): #{ent.ruby_types.map { |h,ent| ent.name }.join(',')}"
+      end
     end
   end
 end

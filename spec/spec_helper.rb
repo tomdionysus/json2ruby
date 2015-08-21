@@ -2,15 +2,17 @@
 warn_level = $VERBOSE
 $VERBOSE = nil
 
-require 'simplecov'
-require 'simplecov-rcov'
+if ENV.has_key?('SIMPLECOV')
+  require 'simplecov'
+  require 'simplecov-rcov'
 
-SimpleCov.formatter = SimpleCov::Formatter::RcovFormatter
-SimpleCov.start do
-  add_filter '/spec/'
+  SimpleCov.formatter = SimpleCov::Formatter::RcovFormatter
+  SimpleCov.start do
+    add_filter '/spec/'
+  end
+else
+  require 'coveralls'
+  Coveralls.wear!
 end
-
-require 'coveralls'
-Coveralls.wear!
 
 require 'json2ruby'

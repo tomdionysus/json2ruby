@@ -174,7 +174,6 @@ describe JSON2Ruby::CLI do
   end
 
   describe '#self.parse_files' do
-
     it 'should reset entity and parse from files' do
       options = {
         :verbose => false
@@ -192,6 +191,120 @@ describe JSON2Ruby::CLI do
     end
 
     it 'should be verbose when option set' do
+    end
+  end
+
+  describe '#self.write_files' do
+    it 'should call File.exists? and File.write with correct data' do
+      options = { :one => 1, :outputdir => File.dirname(__FILE__), :modulenames => [ "TestModule" ] }
+
+      ent = JSON2Ruby::Entity.new("TestEntity", { "one" => JSON2Ruby::RUBYSTRING }) 
+      ents = { ent.attr_hash => ent }
+
+      JSON2Ruby::Entity.class_variable_set(:@@objs, ents)
+
+      writer = {}
+      expect(writer).to receive(:to_code).with(ent,2,options).and_return("CODE")
+
+      expect(File).to receive(:exists?).with("#{options[:outputdir]}/TestEntity.rb").and_return(false)
+      expect(File).to receive(:write).with("#{options[:outputdir]}/TestEntity.rb", "module TestModule\r\nCODEend\r\n")
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Done, Generated 1 file")
+
+      JSON2Ruby::CLI.write_files([],writer, options)
+    end
+
+    it 'should not write collections' do
+      options = { :one => 1, :outputdir => File.dirname(__FILE__), :modulenames => [ "TestModule" ] }
+
+      ents = {}
+      ent = JSON2Ruby::Collection.new("TestCollection", { }) 
+      ents[ent.attr_hash] = ent
+
+      ent = JSON2Ruby::Entity.new("TestEntity", { "one" => JSON2Ruby::RUBYSTRING }) 
+      ents[ent.attr_hash] = ent
+
+      JSON2Ruby::Entity.class_variable_set(:@@objs, ents)
+
+      writer = {}
+      expect(writer).to receive(:to_code).with(ent,2,options).and_return("CODE")
+
+      expect(File).to receive(:exists?).with("#{options[:outputdir]}/TestEntity.rb").and_return(false)
+      expect(File).to receive(:write).with("#{options[:outputdir]}/TestEntity.rb", "module TestModule\r\nCODEend\r\n")
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Done, Generated 1 file")
+
+      JSON2Ruby::CLI.write_files([],writer, options)
+    end
+
+    it 'should alert and not write file if it exists and not --forceoverwrite' do
+      options = { :one => 1, :outputdir => File.dirname(__FILE__), :modulenames => [ "TestModule" ] }
+
+      ent = JSON2Ruby::Entity.new("TestEntity", { "one" => JSON2Ruby::RUBYSTRING }) 
+      ents = { ent.attr_hash => ent }
+
+      JSON2Ruby::Entity.class_variable_set(:@@objs, ents)
+
+      writer = {}
+      expect(writer).to receive(:to_code).with(ent,2,options).and_return("CODE")
+
+      expect(File).to receive(:exists?).with("#{options[:outputdir]}/TestEntity.rb").and_return(true)
+      expect(File).not_to receive(:write)
+
+      expect($stderr).to receive(:puts).with("File #{options[:outputdir]}/TestEntity.rb exists. Use -f to overwrite.")
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Done, Generated 0 files")
+
+      JSON2Ruby::CLI.write_files([],writer, options)
+    end
+
+    it 'should write file if it exists and --forceoverwrite' do
+      options = { :one => 1, :outputdir => File.dirname(__FILE__), :modulenames => [ "TestModule" ], :forceoverwrite=>true }
+
+      ent = JSON2Ruby::Entity.new("TestEntity", { "one" => JSON2Ruby::RUBYSTRING }) 
+      ents = { ent.attr_hash => ent }
+
+      JSON2Ruby::Entity.class_variable_set(:@@objs, ents)
+
+      writer = {}
+      expect(writer).to receive(:to_code).with(ent,2,options).and_return("CODE")
+
+      expect(File).to receive(:exists?).with("#{options[:outputdir]}/TestEntity.rb").and_return(true)
+      expect(File).to receive(:write).with("#{options[:outputdir]}/TestEntity.rb", "module TestModule\r\nCODEend\r\n")
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("Done, Generated 1 file")
+
+      JSON2Ruby::CLI.write_files([],writer, options)
+    end
+  end
+
+  describe '#self.display_entity' do
+    it 'should call puts correctly for entity' do
+      ent = JSON2Ruby::Entity.new("TestEntity")
+      ent.attributes = {
+        "test1" => JSON2Ruby::Attribute.new("testAttr"),
+        "testEntity" => JSON2Ruby::Entity.new("testEntity"),
+        "testCollection" => JSON2Ruby::Collection.new("testCol"),
+      }
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("- TestEntity (Entity - 012345670123456789ABCDEF89ABCDEF)")
+      expect(JSON2Ruby::CLI).to receive(:puts).with("  test1: testAttr")
+      expect(JSON2Ruby::CLI).to receive(:puts).with("  testEntity: testEntity")
+      expect(JSON2Ruby::CLI).to receive(:puts).with("  testCollection: testCol")
+
+      JSON2Ruby::CLI.display_entity("012345670123456789ABCDEF89ABCDEF",ent)
+    end
+
+    it 'should call puts correctly for collection' do
+      ent = JSON2Ruby::Collection.new("TestCollection")
+      ent.ruby_types = {
+       JSON2Ruby::RUBYSTRING.attr_hash => JSON2Ruby::RUBYSTRING
+      }
+
+      expect(JSON2Ruby::CLI).to receive(:puts).with("- TestCollection (Collection - 0123456701234567222BCDEF89ABCDEF)")
+      expect(JSON2Ruby::CLI).to receive(:puts).with("  (Types): String")
+
+      JSON2Ruby::CLI.display_entity("0123456701234567222BCDEF89ABCDEF",ent)
     end
   end
 end
