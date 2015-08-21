@@ -1,3 +1,7 @@
+# Supress Warnings
+warn_level = $VERBOSE
+$VERBOSE = nil
+
 require 'simplecov'
 require 'simplecov-rcov'
 
@@ -6,7 +10,7 @@ SimpleCov.start do
   add_filter '/spec/'
 end
 
-require 'coveralls'
-Coveralls.wear!
+# require 'coveralls'
+# Coveralls.wear!
 
 require 'json2ruby'

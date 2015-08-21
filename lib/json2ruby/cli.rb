@@ -10,6 +10,25 @@ module JSON2Ruby
       puts "json2ruby v#{VERSION}\n"
 
       # Do the cmdline options
+      options = get_cli_options
+
+      # Ensure Output Directory
+      options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
+      puts "Output Directory: #{options[:outputdir]}" if options[:verbose]
+      unless Dir.exists?(options[:outputdir])
+        puts "Creating Output Directory..." if options[:verbose]
+        Dir.mkdir(options[:outputdir])
+      end
+
+      rootclasses = parse_files(options)
+
+      # Write Entities
+
+      write_files(rootclasses, options)
+    end
+
+    def self.get_cli_options
+
       options = {}
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} [options] <file.json> [<file.json>....]"
@@ -36,14 +55,13 @@ module JSON2Ruby
           options[:include] << v
         end
 
-        opts.on("-e", "--extend INCLUDE", "Extend from Class/Module in file") do |v|
+        opts.on("-e", "--extend EXTEND", "Extend from Class/Module in file") do |v|
           options[:extend] ||= []
           options[:extend] << v
         end
 
         opts.on("-M", "--modules", "Create Modules, not classes") do |v|
           options[:modules] = true
-          options.delete(:extend)
         end
 
         opts.on("-a", "--attributemethod METHODNAME", "Use attribute method instead of attr_accessor") do |v|
@@ -84,16 +102,13 @@ module JSON2Ruby
       options[:baseless] ||= false
       options[:forceoverwrite] ||= false
       options[:verbose] ||= false
-      modulenames = options[:namespace].split("::")
 
-      # Ensure Output Directory
-      options[:outputdir] = File.expand_path(options[:outputdir], File.dirname(__FILE__))
-      puts "Output Directory: #{options[:outputdir]}" if options[:verbose]
-      unless Dir.exists?(options[:outputdir])
-        puts "Creating Output Directory..." if options[:verbose]
-        Dir.mkdir(options[:outputdir])
-      end
+      options[:modulenames] = options[:namespace].split("::")
 
+      options
+    end
+
+    def self.parse_files(options)
       # Reset the object cache
       Entity.reset_parse
 
@@ -112,8 +127,10 @@ module JSON2Ruby
         rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, options)
       end
 
-      # Write Entities
+      rootclasses
+    end
 
+    def self.write_files(rootclasses, options)
       files = 0
       Entity.entities.each do |k,v|
         next if options[:baseless] and rootclasses.include?(v)
@@ -131,7 +148,7 @@ module JSON2Ruby
         if v.is_a?(Entity)
           indent = 0
           out = ""
-          modulenames.each do |v|
+          options[:modulenames].each do |v|
             out += (' '*indent)+"module #{v}\r\n"
             indent += 2
           end
