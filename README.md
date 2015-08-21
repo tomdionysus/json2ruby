@@ -11,7 +11,7 @@ The tool will 'fold down' objects with identical fields - i.e. if an object has 
 ## Installation
 
 ```bash
-git clone git@github.com:tomdionysus/json2ruby.git
+gem install json2ruby
 ```
 
 ## Usage
