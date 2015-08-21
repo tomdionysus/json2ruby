@@ -1,6 +1,6 @@
 # json2ruby
 
-[![Build Status](https://travis-ci.org/tomdionysus/json2ruby.svg?branch=master)](https://travis-ci.org/tomdionysus/json2ruby) [![Coverage Status](https://coveralls.io/repos/tomdionysus/json2ruby/badge.svg?branch=master&service=github)](https://coveralls.io/github/tomdionysus/json2ruby?branch=master)
+[![Build Status](https://travis-ci.org/tomdionysus/json2ruby.svg?branch=master)](https://travis-ci.org/tomdionysus/json2ruby) [![Coverage Status](https://coveralls.io/repos/tomdionysus/json2ruby/badge.svg?branch=master&service=github)](https://coveralls.io/github/tomdionysus/json2ruby?branch=master) [![Gem Version](https://badge.fury.io/rb/json2ruby.svg)](http://badge.fury.io/rb/json2ruby)
 
 A ruby rool for generating POROs from JSON data. It is intended to generate ruby model classes/modules from existing JSON data, e.g. responses from an API.
 
