@@ -69,6 +69,14 @@ end
 
 The option `-N, --forcenumeric` can be useful to fold down identical types where an attribute which is a float happens to have an integer value, to avoid generating two identical types.
 
+## Documentation
+
+Regenerate the documentation with 'rdoc':
+
+```bash
+rdoc
+```
+
 ## Contributing
 
 1. Fork it

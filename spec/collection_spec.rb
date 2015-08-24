@@ -62,8 +62,8 @@ describe JSON2Ruby::Collection do
 
       expect(col).to be_a(JSON2Ruby::Collection)
       expect(col.name).to eq("Test")
-      expect(col.ruby_types.length).to eq(4)
-      expect(col.attr_hash).to eq("e38d96234bfbf21545ed4ab2128b9ab4")
+      expect(col.ruby_types.length).to eq(5)
+      expect(col.attr_hash).to eq("94db8ab7a9379e835f6a69714fbec9cc")
     end
   end
 

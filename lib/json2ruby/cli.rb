@@ -4,7 +4,9 @@ require 'optparse'
 
 module JSON2Ruby
 
+  # The CLI (Command Line Interface) functionality class for the json2ruby executable
   class CLI
+    # Run the json2ruby command, using arguments in ARGV.
     def self.run
 
       puts "json2ruby v#{VERSION}\n"
@@ -26,6 +28,7 @@ module JSON2Ruby
       write_files(rootclasses, writer, options)
     end
 
+    # Create the output directory with the options[:outputdir] if it does not exist.
     def self.ensure_output_dir(options)
       puts "Output Directory: #{options[:outputdir]}" if options[:verbose]
       unless Dir.exists?(options[:outputdir])
@@ -34,8 +37,8 @@ module JSON2Ruby
       end
     end
 
+    # Process ARGV for command line switches and return the options hash.
     def self.get_cli_options
-
       options = {}
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} [options] <file.json> [<file.json>....]"
@@ -115,6 +118,7 @@ module JSON2Ruby
       options
     end
 
+    # Parse all JSON files in ARGV and build the Entity cache, using the supplied options Hash.
     def self.parse_files(options)
       # Reset the object cache
       Entity.reset_parse
@@ -137,6 +141,8 @@ module JSON2Ruby
       rootclasses
     end
 
+    # Write out all types in the Entity cache, except primitives and those contained in the 
+    # rootclasses array, to the provided writer with the supplied options Hash.
     def self.write_files(rootclasses, writer, options)
       files = 0
       Entity.entities.each do |k,v|
@@ -171,6 +177,7 @@ module JSON2Ruby
       puts "Done, Generated #{files} file#{files==1 ? '' : 's'}"
     end
 
+    # Display the Entity supplied in ent with the supplied hash value hsh to STDOUT  
     def self.display_entity(hsh, ent)
       puts "- #{ent.name} (#{ent.class.short_name} - #{hsh})"
       if ent.is_a?(Entity)

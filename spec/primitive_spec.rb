@@ -45,7 +45,7 @@ describe JSON2Ruby::Primitive do
       expect(JSON2Ruby::RUBYBOOLEAN.attr_hash).to eq('0123456789ABCDEF0123456789ABCDE2')
 
       expect(JSON2Ruby::RUBYNUMERIC.name).to eq('Numeric')
-      expect(JSON2Ruby::RUBYNUMERIC.attr_hash).to eq('0123456789ABCDEF0123456789ABCDE2')
+      expect(JSON2Ruby::RUBYNUMERIC.attr_hash).to eq('0123456789ABCDEF0123456789ABCDE3')
     end
   end
 end

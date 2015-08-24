@@ -59,7 +59,7 @@ describe JSON2Ruby::Entity do
       expect(ent).to be_a(JSON2Ruby::Entity)
       expect(ent.name).to eq("Test")
       expect(ent.attributes.length).to eq(6)
-      expect(ent.attr_hash).to eq("592884f7d98c4a31b7d641b10636d546")
+      expect(ent.attr_hash).to eq("5681e2da2b9aa0a343e622ef771c0abb")
     end
   end
 

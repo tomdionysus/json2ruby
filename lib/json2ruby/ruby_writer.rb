@@ -3,7 +3,16 @@ require 'json'
 require 'optparse'
 
 module JSON2Ruby
+  # The RubyWriter class contains methods to output ruby code from a given Entity.
   class RubyWriter
+    # Return a String containing a Ruby class/module definition for the given Entity.
+    # Optionally, supply indent to set the indent of the generated code in spaces,
+    # and supply a Hash of options as follows:
+    # * :modules - Boolean if true, generate Ruby +module+ files instead of classes.
+    # * :require - Array of String items, each of which will generate a `require '<x>'` statement for each item
+    # * :superclass_name - String, if supplied, the superclass of the class to geneerate
+    # * :extend - Array of String items, each of which will generate a `extend '<x>'` statement for each item in the class
+    # * :include - Array of String items, each of which will generate a `include '<x>'` statement for each item in the class
     def self.to_code(entity, indent = 0, options = {})
       x = ""
       if options.has_key?(:require)
@@ -27,7 +36,14 @@ module JSON2Ruby
       x
     end
 
-    def self.attributes_to_ruby(entity, indent, options = {})
+    # Return a String containing the Ruby code for each Attribute definition for in the supplied Entity.
+    # Optionally, supply indent to set the indent of the generated code in spaces,
+    # and supply a Hash of options as follows:
+    # * :attributemethod - String, the method to call to define attributes
+    # * :collectionmethod - String, the method to call to define collections
+    # * :includetypes - Boolean if true, include the string of the Attribute type as a second parameter to the definition call.
+    # * :namespace - String, the namespace of the type classes in the format 'Module::SubModule'...
+    def self.attributes_to_ruby(entity, indent = 0, options = {})
       ident = (' '*indent)
       x = ""
       entity.attributes.each do |k,v|
